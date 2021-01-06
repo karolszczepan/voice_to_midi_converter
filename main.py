@@ -67,3 +67,6 @@ if __name__ == '__main__':
     p.terminate()
 
     print("* done recording")
+    #test
+    #tiruriru
+    
