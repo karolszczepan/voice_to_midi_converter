@@ -6,22 +6,11 @@ from synth import Synth
 from f0_detector import F0Detector
 from onset_detector import OnsetDetector
 from app_config import WINDOW_SIZE
+import threading
 import wave
 
 from matplotlib import pyplot as plt
 import librosa
-
-# rms = np.sqrt(np.mean(data**2))
-# self._rms_values.append(rms)
-# self._rms_values_ctr += 1
-# if self._rms_values_ctr == 100:
-#     plt.figure()
-#     plt.plot(self._rms_values)
-#     plt.show()
-#     self._rms_values.clear()
-#     self._rms_values_ctr = 0
-# print(np.sqrt(np.mean(data**2)))
-
 
 class Voice2Midi(object):
 
@@ -29,8 +18,9 @@ class Voice2Midi(object):
         self._synth = Synth()
         self._onset_detector = OnsetDetector()
         self._f0_detector = F0Detector()
-        self._wf = wave.open('audio_files/vocal2.wav', 'rb')
+        self._wf = wave.open('vocal2.wav', 'rb')
         self._p = PyAudio()
+        self._e = threading.Event()
         self._stream = self._p.open(format=self._p.get_format_from_width(self._wf.getsampwidth()),
                         channels=self._wf.getnchannels(),
                         rate=self._wf.getframerate(),
@@ -39,39 +29,19 @@ class Voice2Midi(object):
                         stream_callback=self._process_frame)
 
     def run(self):
-
-        # self._stream = pya.open(
-        #     format=paInt16,
-        #     channels=1,
-        #     rate=SAMPLE_RATE,
-        #     input=True,
-        #     frames_per_buffer=WINDOW_SIZE,
-        #     stream_callback=self._process_frame,
-        # )
-        # self._stream.start_stream()
-
-        # self._stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
-
-
         print(self._wf.getframerate())
         self._stream.start_stream()
-        # print("before loop")
+        # while self._stream.is_active() and not input():
 
-        while self._stream.is_active() and not input():
-            # print("in a loop")
-            time.sleep(0.1)
+        self._synth.run()
 
-        # print("after loop")
         self._stream.stop_stream()
         self._stream.close()
         self._p.terminate()
 
     def _process_frame(self, in_data, frame_count, time_info, status_flag):
         data = self._wf.readframes(frame_count)
-        # print(data)
         data_array = np.frombuffer(data, dtype=np.int32)
-        # print(np.shape(data_array))
-        # print(data_array)
         if np.shape(data_array)[0] == WINDOW_SIZE and np.shape(np.nonzero(data_array))[1] > 0:
             # print(np.shape(np.nonzero(data_array))[1])
             data_array = data_array.astype('float32')
@@ -85,8 +55,9 @@ class Voice2Midi(object):
                     print("Note detected; fundamental frequency: ", freq0)
                     midi_note_value = int(hz_to_midi(freq0)[0])
                     print("Midi note value: ", midi_note_value)
-                    note = RTNote(midi_note_value, 100, 0.05)
-                    self._synth.play_note(note)
+                    note = RTNote(midi_note_value, 100, 0.5)
+                    self._synth.set_new_note(note)
+                    self._synth.e.set()
             return data, paContinue
         else:
             return
@@ -95,3 +66,4 @@ class Voice2Midi(object):
 if __name__ == '__main__':
     proc = Voice2Midi()
     proc.run()
+

@@ -28,10 +28,6 @@ class OnsetDetector(object):
         self._rms_values_ctr = 0
 
     def _get_flux_for_thresholding(self):
-        # print(list(itertools.islice(
-        #     self._last_flux,
-        #     self._segments_buf - self._thresholding_window_size,
-        #     self._segments_buf)))
         return list(itertools.islice(
             self._last_flux,
             self._segments_buf - THRESHOLD_WINDOW_SIZE,
