@@ -21,20 +21,6 @@ class F0Detector(object):
             return
         return freq0
 
-    # def autopower_spectrum(self, samples):
-    #     """
-    #     Calculates a power spectrum of the given data using the Hamming window.
-    #     """
-    #     # TODO: check the length of given samples; treat differently if not
-    #     # equal to the window size
-    #
-    #     windowed = samples * self._hanning_window
-    #     # Add 0s to double the length of the data
-    #     padded = np.append(windowed, self._inner_pad)
-    #     # Take the Fourier Transform and scale by the number of samples
-    #     spectrum = np.fft.fft(padded) / self._window_size
-    #     autopower = np.abs(spectrum * np.conj(spectrum))
-    #     return autopower[:self._window_size]
 
     def calculate_cepstrum(self, samples):
         spectrum = np.fft.fft(samples)

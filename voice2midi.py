@@ -29,7 +29,7 @@ class Voice2Midi(object):
         self._synth = Synth()
         self._onset_detector = OnsetDetector()
         self._f0_detector = F0Detector()
-        self._wf = wave.open('vocal2.wav', 'rb')
+        self._wf = wave.open('audio_files/vocal2.wav', 'rb')
         self._p = PyAudio()
         self._stream = self._p.open(format=self._p.get_format_from_width(self._wf.getsampwidth()),
                         channels=self._wf.getnchannels(),
@@ -55,10 +55,13 @@ class Voice2Midi(object):
 
         print(self._wf.getframerate())
         self._stream.start_stream()
+        # print("before loop")
 
         while self._stream.is_active() and not input():
+            # print("in a loop")
             time.sleep(0.1)
 
+        # print("after loop")
         self._stream.stop_stream()
         self._stream.close()
         self._p.terminate()
@@ -67,23 +70,26 @@ class Voice2Midi(object):
         data = self._wf.readframes(frame_count)
         # print(data)
         data_array = np.frombuffer(data, dtype=np.int32)
-        # print(np.shape(data))
-        data_array = data_array.astype('float32')
-        data_array = data_array / np.max(data_array)
+        # print(np.shape(data_array))
+        # print(data_array)
+        if np.shape(data_array)[0] == WINDOW_SIZE and np.shape(np.nonzero(data_array))[1] > 0:
+            # print(np.shape(np.nonzero(data_array))[1])
+            data_array = data_array.astype('float32')
+            data_array = data_array / np.max(data_array)
 
-        # onset = self._onset_detector.find_onset(data_array)
-
-        if self._onset_detector.find_onset(data_array):
-
-            freq0 = self._f0_detector.find_f0(data_array)
-            if freq0:
-                # Onset detected
-                print("Note detected; fundamental frequency: ", freq0)
-                midi_note_value = int(hz_to_midi(freq0)[0])
-                print("Midi note value: ", midi_note_value)
-                note = RTNote(midi_note_value, 100, 0.05)
-                self._synth.play_note(note)
-        return data, paContinue
+            # onset = self._onset_detector.find_onset(data_array)
+            if self._onset_detector.find_onset(data_array):
+                freq0 = self._f0_detector.find_f0(data_array)
+                if freq0:
+                    # Onset detected
+                    print("Note detected; fundamental frequency: ", freq0)
+                    midi_note_value = int(hz_to_midi(freq0)[0])
+                    print("Midi note value: ", midi_note_value)
+                    note = RTNote(midi_note_value, 100, 0.05)
+                    self._synth.play_note(note)
+            return data, paContinue
+        else:
+            return
 
 
 if __name__ == '__main__':

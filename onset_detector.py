@@ -45,9 +45,9 @@ class OnsetDetector(object):
         flux = sum(spectrum-last_spectrum)
         thresholded = np.mean(self._get_flux_for_thresholding()) * THRESHOLD_MULTIPLIER
         self._last_flux.append(flux)
-        print("thresholded: " + str(thresholded))
+        # print("thresholded: " + str(thresholded))
         prunned = flux - thresholded if thresholded <= flux else 0
-        print("flux: " + str(flux))
+        # print("flux: " + str(flux))
         peak = prunned if prunned > self._last_prunned_flux else 0
         self._last_prunned_flux = prunned
         return peak
