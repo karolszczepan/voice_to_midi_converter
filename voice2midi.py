@@ -18,7 +18,7 @@ class Voice2Midi(object):
         self._synth = Synth()
         self._onset_detector = OnsetDetector()
         self._f0_detector = F0Detector()
-        self._wf = wave.open('vocal2.wav', 'rb')
+        self._wf = wave.open('audio_files/vocal2.wav', 'rb')
         self._p = PyAudio()
         self._e = threading.Event()
         self._stream = self._p.open(format=self._p.get_format_from_width(self._wf.getsampwidth()),
