@@ -28,10 +28,15 @@ class Synth(object):
                 note_on = [0x90, self._current_note.value, self._current_note.velocity]
                 note_off = [0x80, self._current_note.value, 0]
                 self._midiout.send_message(note_on)
-                self._midiout.get_current_api()
-                # time.sleep(self._current_note.duration)
                 print("Waiting...")
                 self.e.wait()
+				try:
+                    self.e.wait(timeout=5)
+                except SystemError:
+                    print("TIMEOUT OCCURED! EXIT...")
+                    break;
+                self.e.clear()
+                print("Waiting done")
                 self.e.clear()
                 print("Waiting done")
                 self._midiout.send_message(note_off)
