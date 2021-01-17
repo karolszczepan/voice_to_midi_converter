@@ -1,7 +1,10 @@
 import numpy as np
 import itertools
 from collections import deque
-from app_config import THRESHOLD_WINDOW_SIZE, THRESHOLD_MULTIPLIER, WINDOW_SIZE, SAMPLE_RATE
+from app_config import THRESHOLD_WINDOW_SIZE, WINDOW_SIZE, SAMPLE_RATE, THRESHOLD_MULTIPLIER, N_MELS
+import matplotlib.pyplot as plt
+import librosa
+from librosa import display
 
 
 class OnsetDetector(object):
@@ -23,28 +26,45 @@ class OnsetDetector(object):
         self._inner_pad = np.zeros(WINDOW_SIZE)
 
         # To ignore the first peak just after starting the application
-        self._first_peak = True
+        self._first_sample = True
         self._rms_values = []
         self._rms_values_ctr = 0
 
+        self._fbank = librosa.filters.mel(SAMPLE_RATE, n_fft=2*WINDOW_SIZE-1, n_mels=N_MELS)
+
     def _get_flux_for_thresholding(self):
+        # print(list(itertools.islice(
+        #     self._last_flux,
+        #     self._segments_buf - THRESHOLD_WINDOW_SIZE,
+        #     self._segments_buf)))
         return list(itertools.islice(
             self._last_flux,
             self._segments_buf - THRESHOLD_WINDOW_SIZE,
             self._segments_buf))
 
     def find_onset(self, samples):
-        # windowed = samples*self._hanning_window
-        # spectrum = np.abs(np.fft.fft(windowed))
+        # print(librosa.onset.onset_strength(samples, sr=SAMPLE_RATE, aggregate=np.median, fmax=8000, n_mels=256))
+        # print(librosa.onset.onset_detect(samples, sr=SAMPLE_RATE, hop_length=WINDOW_SIZE,))
         spectrum = self.autopower_spectrum(samples)
-        last_spectrum = self._last_spectrum
-        flux = sum(spectrum-last_spectrum)
+        # spectrum = librosa.power_to_db(spectrum)
+        # print(spectrum)
+        spectrum = np.dot(self._fbank, spectrum)
+
+        if self._first_sample:
+            self._last_spectrum = spectrum
+            self._first_sample = False
+            return 0
+        diff = spectrum-self._last_spectrum
+
+        diff = np.maximum(diff, 0)
+        flux = sum(diff)
         thresholded = np.mean(self._get_flux_for_thresholding()) * THRESHOLD_MULTIPLIER
-        self._last_flux.append(flux)
         # print("thresholded: " + str(thresholded))
         prunned = flux - thresholded if thresholded <= flux else 0
         # print("flux: " + str(flux))
         peak = prunned if prunned > self._last_prunned_flux else 0
+        self._last_spectrum = spectrum
+        self._last_flux.append(flux)
         self._last_prunned_flux = prunned
         return peak
 
@@ -52,7 +72,6 @@ class OnsetDetector(object):
         windowed = samples * self._hanning_window
         # Add 0s to double the length of the data
         padded = np.append(windowed, self._inner_pad)
-        # Take the Fourier Transform and scale by the number of samples
         spectrum = np.fft.fft(padded) / WINDOW_SIZE
         autopower = np.abs(spectrum * np.conj(spectrum))
         return autopower[:WINDOW_SIZE]

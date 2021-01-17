@@ -1,6 +1,5 @@
-import time
 import numpy as np
-from pyaudio import PyAudio, paContinue
+from pyaudio import PyAudio, paContinue, paComplete
 from midi import hz_to_midi, RTNote
 from synth import Synth
 from f0_detector import F0Detector
@@ -8,9 +7,6 @@ from onset_detector import OnsetDetector
 from app_config import WINDOW_SIZE
 import threading
 import wave
-
-from matplotlib import pyplot as plt
-import librosa
 
 class Voice2Midi(object):
 
@@ -21,6 +17,7 @@ class Voice2Midi(object):
         self._wf = wave.open('audio_files/vocal2.wav', 'rb')
         self._p = PyAudio()
         self._e = threading.Event()
+        self._input_buffer = []
         self._stream = self._p.open(format=self._p.get_format_from_width(self._wf.getsampwidth()),
                         channels=self._wf.getnchannels(),
                         rate=self._wf.getframerate(),
@@ -30,10 +27,8 @@ class Voice2Midi(object):
 
     def run(self):
         print(self._wf.getframerate())
-        self._stream.start_stream()
-        # while self._stream.is_active() and not input():
 
-        self._synth.run()
+        self._synth.run() #main loop of the synth
 
         self._stream.stop_stream()
         self._stream.close()
@@ -60,7 +55,8 @@ class Voice2Midi(object):
                     self._synth.e.set()
             return data, paContinue
         else:
-            return
+            print("Sending over")
+            return paComplete
 
 
 if __name__ == '__main__':
