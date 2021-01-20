@@ -56,7 +56,7 @@ class Voice2Midi(object):
             return data, paContinue
         else:
             print("Sending over")
-            return paComplete
+            return data, paComplete
 
 
 if __name__ == '__main__':

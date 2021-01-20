@@ -30,7 +30,7 @@ class OnsetDetector(object):
         self._rms_values = []
         self._rms_values_ctr = 0
 
-        self._fbank = librosa.filters.mel(SAMPLE_RATE, n_fft=2*WINDOW_SIZE-1, n_mels=N_MELS)
+        self._fbank = librosa.filters.mel(SAMPLE_RATE, fmax=8000, n_fft=2*WINDOW_SIZE-1, n_mels=N_MELS)
 
     def _get_flux_for_thresholding(self):
         # print(list(itertools.islice(
@@ -46,7 +46,7 @@ class OnsetDetector(object):
         # print(librosa.onset.onset_strength(samples, sr=SAMPLE_RATE, aggregate=np.median, fmax=8000, n_mels=256))
         # print(librosa.onset.onset_detect(samples, sr=SAMPLE_RATE, hop_length=WINDOW_SIZE,))
         spectrum = self.autopower_spectrum(samples)
-        # spectrum = librosa.power_to_db(spectrum)
+        spectrum = librosa.power_to_db(spectrum)
         # print(spectrum)
         spectrum = np.dot(self._fbank, spectrum)
 
@@ -54,10 +54,7 @@ class OnsetDetector(object):
             self._last_spectrum = spectrum
             self._first_sample = False
             return 0
-        diff = spectrum-self._last_spectrum
-
-        diff = np.maximum(diff, 0)
-        flux = sum(diff)
+        flux = sum(np.power(spectrum-self._last_spectrum,2))
         thresholded = np.mean(self._get_flux_for_thresholding()) * THRESHOLD_MULTIPLIER
         # print("thresholded: " + str(thresholded))
         prunned = flux - thresholded if thresholded <= flux else 0
